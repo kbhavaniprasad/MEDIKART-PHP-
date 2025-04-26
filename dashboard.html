@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicine Delivery Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a44, #2e4a6b);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 32px;
+            color: #00e6cc;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 230, 204, 0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 230, 204, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card h3 {
+            font-size: 16px;
+            color: #00e6cc;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card p {
+            font-size: 26px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card .icon {
+            font-size: 36px;
+            color: #00c4b4;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chart-container {
+            grid-column: span 2;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .chart-container h3 {
+            font-size: 18px;
+            color: #00e6cc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filter-section select {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .filter-section select:hover {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 4px 10px rgba(0, 230, 204, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            .chart-container {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1>Medicine Delivery Dashboard</h1>
+    </div>
+
+    <div class="filter-section">
+        <select id="timeFilter" onchange="updateDashboard()">
+            <option value="week">Last Week</option>
+            <option value="month">Last Month</option>
+            <option value="year">Last Year</option>
+        </select>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" onclick="showDetails('orders')">
+            <div class="icon">📋</div>
+            <h3>Total Orders</h3>
+            <p id="total-orders">180</p>
+        </div>
+        <div class="card" onclick="showDetails('pending')">
+            <div class="icon">🚚</div>
+            <h3>Pending Deliveries</h3>
+            <p id="pending-deliveries">25</p>
+        </div>
+        <div class="card" onclick="showDetails('revenue')">
+            <div class="icon">💵</div>
+            <h3>Total Revenue</h3>
+            <p id="total-revenue">$8,750</p>
+        </div>
+        <div class="chart-container">
+            <h3>Order Trends</h3>
+            <canvas id="orderChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Sample data (replace with backend data)
+        const data = {
+            week: { orders: 180, pending: 25, revenue: 8750, chart: [30, 25, 40, 35, 20, 15, 15] },
+            month: { orders: 720, pending: 90, revenue: 35400, chart: [150, 180, 140, 160, 120, 100, 110] },
+            year: { orders: 8760, pending: 450, revenue: 425000, chart: [700, 800, 650, 900, 750, 600, 780] }
+        };
+
+        // Initialize chart
+        const ctx = document.getElementById('orderChart').getContext('2d');
+        const orderChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Orders',
+                    data: data.week.chart,
+                    backgroundColor: 'rgba(0, 230, 204, 0.6)',
+                    borderColor: '#00e6cc',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#fff' } },
+                    x: { ticks: { color: '#fff' } }
+                },
+                plugins: { legend: { labels: { color: '#fff' } } }
+            }
+        });
+
+        // Update dashboard based on filter
+        function updateDashboard() {
+            const filter = document.getElementById('timeFilter').value;
+            const selectedData = data[filter];
+
+            document.getElementById('total-orders').textContent = selectedData.orders.toLocaleString();
+            document.getElementById('pending-deliveries').textContent = selectedData.pending.toLocaleString();
+            document.getElementById('total-revenue').textContent = `$${selectedData.revenue.toLocaleString()}`;
+
+            orderChart.data.datasets[0].data = selectedData.chart;
+            orderChart.update();
+        }
+
+        // Show details on card click
+        function showDetails(type) {
+            const filter = document.getElementById('timeFilter').value;
+            const selectedData = data[filter];
+            let message = '';
+
+            switch (type) {
+                case 'orders':
+                    message = `Total Orders (${filter}): ${selectedData.orders.toLocaleString()}`;
+                    break;
+                case 'pending':
+                    message = `Pending Deliveries (${filter}): ${selectedData.pending.toLocaleString()}`;
+                    break;
+                case 'revenue':
+                    message = `Total Revenue (${filter}): $${selectedData.revenue.toLocaleString()}`;
+                    break;
+            }
+
+            alert(message);
+        }
+    </script>
+</body>
+</html>
