@@ -1,25 +1,68 @@
 <?php
-if (isset($_COOKIE['login_details'])) {
-    $user = json_decode($_COOKIE['login_details'], true);
-    $conn = mysqli_connect("localhost", "root", "", "php");
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require 'vendor/autoload.php';
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $u_name = $_POST['uname'];
+    $user_email = $_POST['email'];
+    $user_message = $_POST['message'];
+
+    // Connect to your database
+    $conn = mysqli_connect("localhost", "root", "", "php");
     if (!$conn) {
         die("Connection failed: " . mysqli_connect_error());
     }
 
-    $sql = "SELECT Email FROM registerpage WHERE Username='" . $user['user_name'] . "'";
+    $sql = "SELECT Email FROM registerpage WHERE Username='$u_name'";
     $result = $conn->query($sql);
 
     if ($result && $row = $result->fetch_assoc()) {
-        $email = $row['Email'];
+        $email_in_db = $row['Email'];
+
+        if ($email_in_db === $user_email) {
+            // If email matches, send the mail using PHPMailer
+            $mail = new PHPMailer(true);
+            try {
+                $mail->isSMTP();
+                $mail->Host = 'smtp.gmail.com';
+                $mail->SMTPAuth = true;
+                $mail->Username = 'kolaprasad001@gmail.com'; // Your Gmail
+                $mail->Password = 'fsur flgk undh zbup';     // Your App Password
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = 587;
+
+                // Sender and recipient
+                $mail->setFrom($user_email, $u_name);
+                $mail->addAddress('kolaprasad001@gmail.com', 'MediKart Admin'); // Admin email
+
+                // Email subject and body
+                $mail->isHTML(true);
+                $mail->Subject = "New Contact Message from $u_name";
+                $mail->Body = "
+                    <h2>New Message Received</h2>
+                    <p><strong>Name:</strong> {$u_name}</p>
+                    <p><strong>Email:</strong> {$user_email}</p>
+                    <p><strong>Message:</strong><br>{$user_message}</p>
+                ";
+
+                $mail->send();
+                echo "<script>alert('Message sent successfully!'); window.location.href='contact.php';</script>";
+            } catch (Exception $e) {
+                echo "<script>alert('Mailer Error: {$mail->ErrorInfo}'); window.location.href='contact.php';</script>";
+            }
+        } else {
+            echo "<script>alert('Incorrect email'); window.location.href='contact.php';</script>";
+        }
     } else {
-        $email = ""; // fallback if no result
+        echo "<script>alert('Username not found'); window.location.href='contact.php';</script>";
     }
-} else {
-    $user['user_name'] = ""; // fallback if no cookie
-    $email = "";
+
+    mysqli_close($conn);
 }
 ?>
+
+
 
 
 <!DOCTYPE html>
@@ -212,7 +255,7 @@ if (isset($_COOKIE['login_details'])) {
             <div class="logo">MediKart</div>
             <nav>
                 <ul>
-                    <li><a href="index.html">Home</a></li>
+                    <li><a href="home1.html">Home</a></li>
                     <li><a href="shop.html">Shop</a></li>
                     <li><a href="about.html">About</a></li>
                     <li><a href="contact.php">Contact</a></li>
@@ -227,25 +270,25 @@ if (isset($_COOKIE['login_details'])) {
             <h1>Contact Us</h1>
             <p>We're here to assist you with your medicine delivery needs. Reach out to us anytime!</p>
             <div class="info-item">
-                <span class="icon">📧</span>
+                <span class="icon">&#9993;</span>
                 <p>support@medikart.com</p>
             </div>
             <div class="info-item">
-                <span class="icon">📞</span>
+                <span class="icon">&#128222;</span>
                 <p>+1-800-MEDI-KART</p>
             </div>
             <div class="info-item">
-                <span class="icon">📍</span>
+                <span class="icon">&#128205;</span>
                 <p>123 Health St, Wellness City, USA</p>
             </div>
         </div>
         <div class="contact-form">
             <h2>Send a Message</h2>
             <form action="contact.php" method="POST">
-                <input type="text" name="name" placeholder="Your Name" value="<?php echo htmlspecialchars($user['user_name']); ?>" required>
-                <input type="email" name="email" placeholder="Your Email" value="<?php echo htmlspecialchars($email); ?>" required>
+                <input type="text" name="uname" placeholder="Your Name"  required>
+                <input type="email" name="email" placeholder="Your Email"  required>
                 <textarea name="message" rows="5" placeholder="Your Message" required></textarea>
-                <button type="submit">Send</button>
+                <button type="submit" >Send</button>
             </form>
         </div>
     </section>
