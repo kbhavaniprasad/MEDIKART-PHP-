@@ -235,6 +235,7 @@ if (!isset($_SESSION['csrf_token'])) {
                     <li><a href="about.html">About</a></li>
                     <li><a href="contact.php">Contact</a></li>
                     <li><a href="logout.php">LogOut</a></li>
+                    <li><a href="addtocart.php">Cart</a></li>
                 </ul>
             </nav>
         </div>
@@ -450,6 +451,7 @@ if (!isset($_SESSION['csrf_token'])) {
                     const productCard = button.closest('.product-card');
                     const productName = productCard.querySelector('h3').textContent;
                     const productPrice = productCard.querySelector('.price').textContent;
+                    const productImage =productCard.querySelector('img').src;
 
                     // Create a form dynamically to send data to PHP
                     const form = document.createElement('form');
@@ -469,6 +471,13 @@ if (!isset($_SESSION['csrf_token'])) {
                     priceInput.name = 'productPrice';
                     priceInput.value = productPrice;
                     form.appendChild(priceInput);
+                    
+                    //Add Product image
+                    const imageInput = document.createElement('input');
+                    imageInput.type = 'hidden';
+                    imageInput.name = 'productImage';
+                    imageInput.value = productImage;
+                    form.appendChild(imageInput);
 
                     // Add CSRF token
                     const csrfInput = document.createElement('input');

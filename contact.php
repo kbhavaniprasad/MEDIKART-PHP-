@@ -260,6 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <li><a href="about.html">About</a></li>
                     <li><a href="contact.php">Contact</a></li>
                     <li><a href="logout.php">LogOut</a></li>
+                    <li><a href="addtocart.php">Cart</a></li>
                 </ul>
             </nav>
         </div>
