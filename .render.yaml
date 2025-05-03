@@ -1,7 +1,16 @@
 services:
   - type: web
-    name: php-app
+    name: medikart-php
     env: docker
     plan: free
     branch: main
     dockerfilePath: Dockerfile
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
