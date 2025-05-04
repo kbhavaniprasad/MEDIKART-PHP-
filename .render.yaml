@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: medikart-php
+    name: MEDIKART-PHP
     env: docker
     plan: free
     branch: main

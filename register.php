@@ -6,13 +6,13 @@ $phone = $_POST['phone'];
 $email = $_POST['email'];
 
 // Database connection details
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "php";
+$host = getenv('DB_HOST');
+$user = getenv('DB_USER');
+$pass = getenv('DB_PASS');
+$db   = getenv('DB_NAME');
 
-// Create connection
-$conn = mysqli_connect($servername, $username, $password, $dbname);
+//create a connection
+$conn = mysqli_connect($host, $user, $pass, $db);
 
 // Check connection
 if (!$conn) {
