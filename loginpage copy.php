@@ -1,8 +1,7 @@
 <?php
-session_start();
-require_once 'config.php';
+$uname_value = ''; // Default empty
 
-$uname_value = '';
+// Only autofill if user just registered
 if (isset($_COOKIE['just_registered']) && isset($_COOKIE['user_details'])) {
     $cookieData = json_decode($_COOKIE['user_details'], true);
     if (isset($cookieData['u_name'])) {
@@ -10,73 +9,56 @@ if (isset($_COOKIE['just_registered']) && isset($_COOKIE['user_details'])) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $uname = filter_var($_POST['uname'] ?? '', FILTER_SANITIZE_STRING);
-    $pwd = $_POST['pwd'] ?? '';
+// Database connection
 
-    if (!$uname || !$pwd) {
-        echo "<script>alert('All fields are required.'); window.location.href = 'loginpage.php';</script>";
-        exit;
-    }
+$host = "localhost";
+$user = "root";
+$pass = "";
+$db   = "php";
+$conn = mysqli_connect($host, $user, $pass, $db);
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
 
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if ($conn->connect_error) {
-        echo "<script>alert('Database connection failed: " . addslashes($conn->connect_error) . "'); window.location.href = 'loginpage.php';</script>";
-        exit;
-    }
+// Handle login form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $uname = $_POST['uname'];
+    $pwd = $_POST['pwd'];
 
-    // Verify user credentials
-    $stmt = $conn->prepare("SELECT username, email, password FROM registerpage WHERE username = ?");
-    if ($stmt === false) {
-        echo "<script>alert('Prepare failed: " . addslashes($conn->error) . "'); window.location.href = 'loginpage.php';</script>";
-        $conn->close();
-        exit;
-    }
-    $stmt->bind_param("s", $uname);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-    $stmt->close();
+    $sql = "SELECT Password FROM registerpage WHERE Username='$uname'";
+    $result = $conn->query($sql);
 
-    if ($user && password_verify($pwd, $user['password'])) {
-        $_SESSION['user'] = $user['username'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['cart'] = [];
+    if ($result) {
+        $row = $result->fetch_assoc();
+        if ($row) {
+            if ($pwd === $row['Password']) {
+                echo "<script>
+                    alert('Login Successful');
+                    window.location.href = 'home1.html';
+                </script>";
 
-        // Load cart items
-        $stmt = $conn->prepare("SELECT product_id, name, price, image, quantity FROM cart_items WHERE user = ?");
-        if ($stmt === false) {
-            // Log the error and continue without cart items
-            error_log("Prepare failed for cart_items: " . $conn->error);
-            // Optionally, initialize an empty cart and proceed
-        } else {
-            $stmt->bind_param("s", $uname);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            while ($item = $result->fetch_assoc()) {
-                $_SESSION['cart'][] = [
-                    'product_id' => $item['product_id'],
-                    'name' => $item['name'],
-                    'price' => $item['price'],
-                    'image' => $item['image'],
-                    'quantity' => $item['quantity'],
-                    'user' => $uname,
-                    'email' => $user['email']
+                $details = [
+                    'user_name'=> $uname,
                 ];
+                setcookie('details',json_encode($details),time()+3600,"/");
+            } else {
+                echo "<script>
+                    alert('Incorrect Password');
+                    window.location.href = 'loginpage.php';
+                </script>";
             }
-            $stmt->close();
+        } else {
+            echo "<script>
+                alert('Username not found');
+                window.location.href = 'loginpage.php';
+            </script>";
         }
-
-        // Set cookie for compatibility
-        $details = ['user_name' => $uname];
-        setcookie('details', json_encode($details), time() + 3600, '/');
-        echo "<script>alert('Login Successful'); window.location.href = 'shop.php';</script>";
     } else {
-        echo "<script>alert('Invalid username or password.'); window.location.href = 'loginpage.php';</script>";
+        echo "Query Error: " . $conn->error;
     }
-    $conn->close();
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
